@@ -24,7 +24,6 @@ function updatePointsAndRender(){
     points = [];
     divideTriangle(vertices[0], vertices[1], vertices[2],
                     NumTimesToSubdivide);
-    rotatePoints(points);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(points), gl.DYNAMIC_DRAW);
     render();
 }
@@ -86,7 +85,7 @@ window.onload = function init()
     render();
 };
 
-function rotatePoints(points) {
+function rotateAllPoints(points) {
     points.forEach(function (point) { rotateByTheta(point); });
 
 }
@@ -97,6 +96,7 @@ function rotateByTheta(point) {
     var xNew;
     var yNew;
     var d;
+    var newPoint = vec2(0, 0);
 
     //sin(a+b) = sin(a)cos(b) + sin(b)cos(a)
     //cos(a+b) = cos(a)cos(b) - sin(a)sin(b)
@@ -106,10 +106,10 @@ function rotateByTheta(point) {
     d = Math.sqrt(x * x + y * y);
     xNew = x * Math.cos(d*theta) - y * Math.sin(d*theta);
     yNew = x * Math.sin(d*theta) + y * Math.cos(d*theta);
-    point[0] = xNew;
-    point[1] = yNew;
+    newPoint[0] = xNew;
+    newPoint[1] = yNew;
 
-    return point;
+    return newPoint;
 }
 function triangle( a, b, c )
 {
@@ -123,7 +123,7 @@ function divideTriangle( a, b, c, count )
     // check for end of recursion
 
     if ( count === 0 ) {
-        triangle( a, b, c );
+        triangle( rotateByTheta(a), rotateByTheta(b), rotateByTheta(c) );
     }
     else {
 
