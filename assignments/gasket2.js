@@ -24,6 +24,7 @@ function updatePointsAndRender(){
     points = [];
     divideTriangle(vertices[0], vertices[1], vertices[2],
                     NumTimesToSubdivide);
+    rotatePoints(points);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(points), gl.DYNAMIC_DRAW);
     render();
 }
@@ -85,19 +86,26 @@ window.onload = function init()
     render();
 };
 
+function rotatePoints(points) {
+    points.forEach(function (point) { rotateByTheta(point); });
+
+}
+
 function rotateByTheta(point) {
     var x;
     var y;
     var xNew;
     var yNew;
+    var d;
 
     //sin(a+b) = sin(a)cos(b) + sin(b)cos(a)
     //cos(a+b) = cos(a)cos(b) - sin(a)sin(b)
 
     x = point[0];
     y = point[1];
-    xNew = x * Math.cos(theta) - y * Math.sin(theta);
-    yNew = x * Math.sin(theta) + y * Math.cos(theta);
+    d = Math.sqrt(x * x + y * y);
+    xNew = x * Math.cos(d*theta) - y * Math.sin(d*theta);
+    yNew = x * Math.sin(d*theta) + y * Math.cos(d*theta);
     point[0] = xNew;
     point[1] = yNew;
 
@@ -106,7 +114,7 @@ function rotateByTheta(point) {
 function triangle( a, b, c )
 {
 
-    points.push( rotateByTheta(a), rotateByTheta(b), rotateByTheta(c) );
+    points.push( a, b, c );
 }
 
 function divideTriangle( a, b, c, count )
