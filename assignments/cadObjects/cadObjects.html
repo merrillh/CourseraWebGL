@@ -1,0 +1,109 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <script src="../../Common/MV.js"></script>
+    <script src="../../Common/webgl-utils.js"></script>
+    <script src="../../Common/initShaders.js"></script>
+    <script id="vertexShader" type="x-shader/x-vertex">
+        attribute vec3 vPosition;
+        attribute vec3 vNormal;
+        
+        uniform mat4 modelRotate;
+        uniform mat4 modelTranslate; 
+        uniform mat4 modelScale;
+        uniform mat4 modelView;
+        uniform mat4 camera;
+        uniform mat4 perspective;
+        varying vec4 vColor;
+        void main(){
+            vec4 vPosition4 = vec4(vPosition*.5, 1); // set the w coordinate to 1 for al points
+            mat4 modelView = modelTranslate*modelRotate*modelScale;
+            gl_Position = perspective*camera*modelView*vPosition4;
+        
+            vColor = gl_Position;
+            //vec4((vPosition.xy+1.0)/2.0, .55, 1);
+        }
+    </script>
+    <script id="fragmentShader" type="x-shader/x-fragment">
+        precision mediump float;
+        varying vec4 vColor;
+
+        void main(){
+            // gl_FragCoord.xy
+            //gl_FragColor = vec4(1, 0, 0, 1);
+            //gl_FragColor = vec4(gl_FragCoord.x, gl_FragCoord.y, 0, 1);
+            gl_FragColor = vColor;
+        }
+    </script>
+    <script src="cadObjects.js"></script>
+</head>
+<body>
+    <h1>Works in up to date versions of Firefox, Opera, and Chrome</h1>
+    <table>
+        <tr>
+            <td>
+                <canvas id="glCanvas" height="800" width="800" tabindex="1">This browser doesn't support webGL.
+                </canvas>
+            </td>
+            <td>
+                <br />
+                <br />
+                <label for="slider_scale">Scale</label>
+                <input type="range" min="1" max="100" value="100" id="slider_scale" step="1" oninput="updateScale(value)" />
+                <output for="slider_scale" id="scaleValue">100</output>
+                <br />
+                <label for="slider_scaleX">Scale X</label>
+                <input type="range" min="1" max="100" value="100" id="slider_scaleX" step="1" oninput="updateScaleX(value)" />
+                <output for="slider_scaleX" id="scaleValueX">100</output>
+                <br />
+                <label for="slider_scaleY">Scale Y</label>
+                <input type="range" min="1" max="100" value="100" id="slider_scaleY" step="1" oninput="updateScaleY(value)" />
+                <output for="slider_scaleY" id="scaleValueY">100</output>
+                <br />
+                <label for="slider_scaleZ">Scale Z</label>
+                <input type="range" min="1" max="100" value="100" id="slider_scaleZ" step="1" oninput="updateScaleZ(value)" />
+                <output for="slider_scaleZ" id="scaleValueZ">100</output>
+                <br />
+
+                <label for="slider_rotateX">rotate around the X axis</label>
+                <input type="range" min="0" max="360" value="360" id="slider_rotateX" step="1" oninput="updateRotateX(value)" />
+                <output for="slider_rotateX" id="rotateValueX">360</output>
+                <br />
+                <label for="slider_rotateY">rotate around the Y axis</label>
+                <input type="range" min="0" max="360" value="360" id="slider_rotateY" step="1" oninput="updateRotateY(value)" />
+                <output for="slider_rotateY" id="rotateValueY">360</output>
+                <br />
+                <label for="slider_rotateZ">rotate around the Z axi</label>
+                <input type="range" min="0" max="360" value="360" id="slider_rotateZ" step="1" oninput="updateRotateZ(value)" />
+                <output for="slider_rotateZ" id="rotateValueZ">360</output>
+                <br />
+
+                <label for="slider_translateX">translate X</label>
+                <input type="range" min="-2" max="2" value="0" id="slider_translateX" step=".1" oninput="updateTranslateX(value)" />
+                <output for="slider_translateX" id="translateValueX">0</output>
+                <br />
+                <label for="slider_translateY">translate Y</label>
+                <input type="range" min="-2" max="2" value="0" id="slider_translateY" step=".1" oninput="updateTranslateY(value)" />
+                <output for="slider_translateY" id="translateValueY">0</output>
+                <br />
+                <label for="slider_translateZ">translate Z</label>
+                <input type="range" min="-2" max="2" value="0" id="slider_translateZ" step=".1" oninput="updateTranslateZ(value)" />
+                <output for="slider_translateZ" id="translateValueZ">0</output>
+                <br />
+
+                <br />
+                <button type="button" id="button_addSphere">add sphere</button>
+                <button type="button" id="button_addCylinder">add cylinder</button>
+                <button type="button" id="button_addCone">add cone</button>
+
+            </td>
+        </tr>
+    </table>
+
+    <div id="debug"></div>
+    <div id="debugDisplayTemporary"></div>
+</body>
+</html>
