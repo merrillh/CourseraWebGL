@@ -1,0 +1,170 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <script src="../../Common/MV.js"></script>
+    <script src="../../Common/webgl-utils.js"></script>
+    <script src="../../Common/initShaders.js"></script>
+    <script id="vertexShader" type="x-shader/x-vertex">
+        precision mediump float;
+        precision mediump int;
+       
+        attribute vec3 vPosition;
+        attribute vec3 vNormal;
+        
+        uniform mat4 modelRotate;
+        uniform mat4 modelTranslate; 
+        uniform mat4 modelScale;
+        uniform mat4 modelView;
+        uniform mat4 camera;
+        uniform mat4 perspective;
+        varying vec4 vColor;
+        varying vec4 interpolatedVPosition;
+        varying vec3 interpolatedVNormal;
+        void main(){
+            vec4 vPosition4 = vec4(vPosition*.5, 1); // set the w coordinate to 1 for all points
+            mat4 modelView = modelTranslate*modelRotate*modelScale;
+            gl_Position = perspective*camera*modelView*vPosition4;
+        
+            vColor = gl_Position;
+            interpolatedVPosition = modelView*vPosition4;//do lighting calculation in world space since the light positions are already in world space
+            interpolatedVPosition = interpolatedVPosition.xyzw / interpolatedVPosition.w; //dehomogenize - divide by w to make sure the position vectors are at w=1 and are the correct length
+            interpolatedVNormal = vec3(modelView*vec4(vNormal,1)).xyz;
+            //vec4((vPosition.xy+1.0)/2.0, .55, 1);
+        }
+    </script>
+    <script id="fragmentShader" type="x-shader/x-fragment">
+        precision mediump float;
+        precision mediump int;
+
+        int numLights; 
+        const int MAX_LIGHTS = 8;
+        const int L_POINT = 0;
+        const int L_DIRECTIONAL = 1;
+        struct LightProperty {
+            vec4 color;
+            vec3 position;
+            int lightType;
+            float La; // Ambient light intensity
+            float Ld; // Diffuse light intensity
+            float Ls; // Specular light intensity
+        };
+        uniform LightProperty lightList[MAX_LIGHTS];
+
+        uniform vec3 eyePosition;
+        uniform mat4 lightRotate;
+        uniform mat4 lightTranslate; 
+
+        varying vec4 vColor;
+        varying vec4 interpolatedVPosition;
+        varying vec3 interpolatedVNormal;
+        vec4 finalColor = vec4(0,0,0,1);
+        void main(){
+            // gl_FragCoord.xy
+            //gl_FragColor = vec4(1, 0, 0, 1);
+            //gl_FragColor = vec4(gl_FragCoord.x, gl_FragCoord.y, 0, 1);
+            //gl_FragColor = vColor;
+            //gl_FragColor = normalize(vColor);
+            //gl_FragColor = vec4(interpolatedVNormal,1);
+            //gl_FragColor = finalColor + normalize(gl_FragCoord); 
+            
+            vec3 N = normalize(interpolatedVNormal);
+            vec3 towardEye = normalize(eyePosition - interpolatedVPosition.xyz);            
+            for (int i = 0; i < MAX_LIGHTS; i++){
+                vec3 lightPosition = (lightTranslate* lightRotate* vec4(lightList[i].position, 0)).xyz; 
+                //vec3 towardLight = normalize(lightList[i].position - interpolatedVPosition.xyz);
+                vec3 towardLight = normalize(lightPosition - interpolatedVPosition.xyz);
+                //vec3 reflectionDir = normalize(-towardLight + 2.0*dot(N,towardLight)*N);
+
+                float distanceToLight = length(lightPosition - interpolatedVPosition.xyz);
+                float attenuation = 15.0/(1.0 + .5*distanceToLight + .1*distanceToLight*distanceToLight);
+
+                //ambient
+                finalColor += lightList[i].color*lightList[i].La;
+
+                //diffuse
+                float nDotL = dot(towardLight, N);
+                finalColor += attenuation*max(0.0, nDotL)*lightList[i].color*lightList[i].Ld    ;
+                        
+                //specular
+                vec3 halfVector = normalize(towardLight + towardEye);
+                float hDotN = dot(halfVector, N);
+                float specular = pow( max(-hDotN,0.0), 12.0); //TODO Why is the halfVector reversed?
+                finalColor += attenuation*specular*lightList[i].color*lightList[i].Ls;
+
+                if (i < numLights) break;  
+            }
+            gl_FragColor = finalColor;
+        }
+    </script>
+    <script src="cadObjects.js"></script>
+</head>
+<body>
+    <h1>Works in up to date versions of Firefox, Opera, and Chrome</h1>
+    <table>
+        <tr>
+            <td>
+                <canvas id="glCanvas" height="800" width="800" tabindex="1">This browser doesn't support webGL.
+                </canvas>
+            </td>
+            <td>
+                <br />
+                <br />
+                <label for="slider_scale">Scale</label>
+                <input type="range" min="1" max="100" value="100" id="slider_scale" step="1" oninput="updateScale(value)" />
+                <output for="slider_scale" id="scaleValue">100</output>
+                <br />
+                <label for="slider_scaleX">Scale X</label>
+                <input type="range" min="1" max="100" value="100" id="slider_scaleX" step="1" oninput="updateScaleX(value)" />
+                <output for="slider_scaleX" id="scaleValueX">100</output>
+                <br />
+                <label for="slider_scaleY">Scale Y</label>
+                <input type="range" min="1" max="100" value="100" id="slider_scaleY" step="1" oninput="updateScaleY(value)" />
+                <output for="slider_scaleY" id="scaleValueY">100</output>
+                <br />
+                <label for="slider_scaleZ">Scale Z</label>
+                <input type="range" min="1" max="100" value="100" id="slider_scaleZ" step="1" oninput="updateScaleZ(value)" />
+                <output for="slider_scaleZ" id="scaleValueZ">100</output>
+                <br />
+
+                <label for="slider_rotateX">rotate around the X axis</label>
+                <input type="range" min="0" max="360" value="360" id="slider_rotateX" step="1" oninput="updateRotateX(value)" />
+                <output for="slider_rotateX" id="rotateValueX">360</output>
+                <br />
+                <label for="slider_rotateY">rotate around the Y axis</label>
+                <input type="range" min="0" max="360" value="360" id="slider_rotateY" step="1" oninput="updateRotateY(value)" />
+                <output for="slider_rotateY" id="rotateValueY">360</output>
+                <br />
+                <label for="slider_rotateZ">rotate around the Z axi</label>
+                <input type="range" min="0" max="360" value="360" id="slider_rotateZ" step="1" oninput="updateRotateZ(value)" />
+                <output for="slider_rotateZ" id="rotateValueZ">360</output>
+                <br />
+
+                <label for="slider_translateX">translate X</label>
+                <input type="range" min="-2" max="2" value="0" id="slider_translateX" step=".1" oninput="updateTranslateX(value)" />
+                <output for="slider_translateX" id="translateValueX">0</output>
+                <br />
+                <label for="slider_translateY">translate Y</label>
+                <input type="range" min="-2" max="2" value="0" id="slider_translateY" step=".1" oninput="updateTranslateY(value)" />
+                <output for="slider_translateY" id="translateValueY">0</output>
+                <br />
+                <label for="slider_translateZ">translate Z</label>
+                <input type="range" min="-2" max="2" value="0" id="slider_translateZ" step=".1" oninput="updateTranslateZ(value)" />
+                <output for="slider_translateZ" id="translateValueZ">0</output>
+                <br />
+
+                <br />
+                <button type="button" id="button_addSphere">add sphere</button>
+                <button type="button" id="button_addCylinder">add cylinder</button>
+                <button type="button" id="button_addCone">add cone</button>
+
+            </td>
+        </tr>
+    </table>
+
+    <div id="debug"></div>
+    <div id="debugDisplayTemporary"></div>
+</body>
+</html>
